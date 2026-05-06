@@ -1,6 +1,7 @@
-package com.example.AI_Study_App.controller_Study_App;
-import com.example.aistudyapp.model.studyModel;
-import com.example.aistudyapp.repository.studyRepository;
+package com.example.AI_Study_App.controller;
+
+import com.example.AI_Study_App.model.studyModel;
+import com.example.AI_Study_App.repository.studyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -9,7 +10,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/study")
 @CrossOrigin(origins = "*") 
-public class studyController {
+public class studyAIController {
 
     @Autowired
     private studyRepository studyRepository;
