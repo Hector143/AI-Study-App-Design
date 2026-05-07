@@ -25,11 +25,14 @@ function getGrade(pct: number) {
   return { grade: "F", label: "Study More!", color: "text-rose-400", bg: "from-rose-500 to-red-500" };
 }
 
+// ... (imports and getGrade function stay the same)
+
 export default function QuizResults() {
   const { categoryId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const hasConfetti = useRef(false);
+  const hasSaved = useRef(false); // Add this to prevent double-saving in Strict Mode
 
   const state = location.state as LocationState | null;
   const category = categories.find((c) => c.id === categoryId);
@@ -41,15 +44,15 @@ export default function QuizResults() {
   const pct = Math.round((score / total) * 100);
   const { grade, label, color, bg } = getGrade(pct);
 
+  // COMBINED EFFECT: Confetti AND Database Save
   useEffect(() => {
+    // 1. Confetti Logic
     if (pct >= 70 && !hasConfetti.current) {
       hasConfetti.current = true;
       const count = pct >= 90 ? 300 : 150;
-
       const fire = (opts: confetti.Options) => {
         confetti({ ...opts, disableForReducedMotion: true });
       };
-
       setTimeout(() => {
         fire({
           particleCount: count,
@@ -58,15 +61,33 @@ export default function QuizResults() {
           colors: ["#8B5CF6", "#6366F1", "#A78BFA", "#C4B5FD", "#F9A8D4"],
         });
       }, 300);
-
-      if (pct >= 90) {
-        setTimeout(() => {
-          fire({ particleCount: 80, angle: 60, spread: 55, origin: { x: 0 }, colors: ["#8B5CF6", "#6366F1"] });
-          fire({ particleCount: 80, angle: 120, spread: 55, origin: { x: 1 }, colors: ["#F9A8D4", "#C4B5FD"] });
-        }, 700);
-      }
     }
-  }, [pct]);
+
+    // 2. Database Save Logic
+    const saveToDb = async () => {
+      if (hasSaved.current) return; // Prevent double trigger
+      hasSaved.current = true;
+
+      const userId = localStorage.getItem("userId"); 
+      try {
+        const response = await fetch("http://localhost:8080/api/quizzes/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: userId ? parseInt(userId) : 1,
+            score: score,
+            totalQuestions: total,
+            xpEarned: xpGained
+          }),
+        });
+        if (response.ok) console.log("✅ Saved to MySQL!");
+      } catch (err) {
+        console.error("❌ Save failed:", err);
+      }
+    };
+
+    saveToDb();
+  }, [pct, score, total, xpGained]); 
 
   const questions = state?.questions || category?.questions.slice(0, total) || [];
 

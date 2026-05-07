@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import {
@@ -13,6 +13,27 @@ export default function Dashboard() {
   const { user, logout, quizHistory } = useApp();
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const userId = localStorage.getItem("userId") || "1";
+        const response = await fetch(`http://localhost:8080/api/quizzes/user/${userId}/history`);
+        if (response.ok) {
+          const data = await response.json();
+          setRecentActivities(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch history:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHistory();
+  }, []);
+  // ------------------------
 
   const filters = ["All", "Easy", "Medium", "Hard"];
 
@@ -221,8 +242,9 @@ export default function Dashboard() {
                 <h3 className="text-white" style={{ fontWeight: 700 }}>Recent Activity</h3>
               </div>
               <div className="space-y-3">
-                {quizHistory.slice(0, 4).map((result, i) => {
-                  const pct = Math.round((result.score / result.total) * 100);
+                {recentActivities.slice(0, 4).map((result, i) => {
+                   // We use result.totalQuestions because that's what your Java backend sends
+                    const pct = Math.round((result.score / (result.totalQuestions || 1)) * 100);
                   return (
                     <motion.div
                       key={i}

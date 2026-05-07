@@ -30,23 +30,35 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    if (!email || !password) {
-      setError("Please fill in all fields.");
-      return;
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  
+  const path = isLogin ? "/api/users/login" : "/api/users/signup";
+  
+  try {
+    const response = await fetch(`http://localhost:8080${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        full_name: name,
+        email: email,
+        password_hash: password
+      }),
+    });
+
+    if (response.ok) {
+      login(name || email.split("@")[0], email);
+      navigate("/dashboard");
+    } else {
+      setError("Invalid credentials or server error.");
     }
-    if (!isLogin && !name.trim()) {
-      setError("Please enter your name.");
-      return;
-    }
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    login(isLogin ? email.split("@")[0] : name, email);
+  } catch (err) {
+    setError("Backend is not running.");
+  } finally {
     setLoading(false);
-    navigate("/dashboard");
-  };
+  }
+};
 
   return (
     <div className="min-h-screen bg-[#080618] overflow-hidden relative flex">
